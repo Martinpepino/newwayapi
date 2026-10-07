@@ -5,3 +5,4 @@ Flask-SQLAlchemy
 marshmallow-sqlalchemy
 PyMySQL
 gunicorn
+npx skills add supabase/agent-skills
