@@ -5,3 +5,5 @@ Flask-SQLAlchemy
 marshmallow-sqlalchemy
 PyMySQL
 gunicorn
+psycopg2-binary
+psycopg[binary]
