@@ -10,7 +10,7 @@ CORS(app) #permite acceder desde el front al back
 
 # configuro la base de datos, con el nombre el usuario y la clave
 # app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://user:password@localhost/proyecto'
-app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://c1620196_newway:Newway/db42302016@localhost/c1620196_newway'
+app.config['SQLALCHEMY_DATABASE_URI']='postgresql://postgres:Newway42302016@db.zbbjbvrljeojnuhykgra.supabase.co:5432/postgres'
 # URI de la BBDD                          driver de la BD  user:clave@URLBBDD/nombreBBDD
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False #none
 db= SQLAlchemy(app)   #crea el objeto db de la clase SQLAlquemy
