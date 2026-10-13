@@ -10,7 +10,7 @@ CORS(app) #permite acceder desde el front al back
 
 # configuro la base de datos, con el nombre el usuario y la clave
 # app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://user:password@localhost/proyecto'
-app.config['SQLALCHEMY_DATABASE_URI']='postgresql://postgres.zbbjbvrljeojnuhykgra:Newway42302016@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
+app.config['SQLALCHEMY_DATABASE_URI']='postgresql+psycopg://postgres.zbbjbvrljeojnuhykgra:Newway42302016@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
 # URI de la BBDD                          driver de la BD  user:clave@URLBBDD/nombreBBDD
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False #none
 db= SQLAlchemy(app)   #crea el objeto db de la clase SQLAlquemy
@@ -76,30 +76,39 @@ class Clientes(db.Model):
 with app.app_context():
     db.create_all() #Crea las tablas
 
-class ArticulosSchema(ma.Schema):
+# Modificación de Esquemas para compatibilidad con Python moderno y Supabase
+class ArticulosSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields=('id_articulo','rubro','descripcion','precio','stock')
+        model = Articulos
+        load_instance = True
+        sqla_session = db.session
     
 articulo_schema=ArticulosSchema()
 articulos_schema=ArticulosSchema(many=True)
 
-class PedidosSchema(ma.Schema):
+class PedidosSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields=('id_pedido','cod_cli','fecha','estado')
+        model = Pedidos
+        load_instance = True
+        sqla_session = db.session
     
 pedido_schema=PedidosSchema()
 pedidos_schema=PedidosSchema(many=True)
 
-class DetPedidosSchema(ma.Schema):
+class DetPedidosSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields=('id','id_pedido','cod_art','rubro','descripcion','cantp','precio','subtotal')
+        model = DetPedidos
+        load_instance = True
+        sqla_session = db.session
     
 detpedido_schema=DetPedidosSchema()
 detpedidos_schema=DetPedidosSchema(many=True)
 
-class ClientesSchema(ma.Schema):
+class ClientesSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
-        fields=('id_cliente','name','passw','status')
+        model = Clientes
+        load_instance = True
+        sqla_session = db.session
     
 cliente_schema=ClientesSchema()
 clientes_schema=ClientesSchema(many=True)
