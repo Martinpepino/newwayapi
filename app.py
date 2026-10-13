@@ -212,43 +212,57 @@ def close_pedido(id):
     return pedidos_schema.jsonify(user)
 
 #Login
-@app.route('/login/<cliente>/<ps>',methods=['GET'])
-def autorizar(cliente,ps):
+@app.route('/login/<cliente>/<ps>', methods=['GET'])
+def autorizar(cliente, ps):
+    # 1. CONVERSIÓN CRUCIAL PARA POSTGRESQL (De string a entero)
+    try:
+        cliente_int = int(cliente)
+    except ValueError:
+        noautorizado = Clientes(0, '', 'ID de cliente inválido', 0)
+        return cliente_schema.jsonify(noautorizado), 400
+
     # Chequeo si el password y el usuario son correctos y si tiene menos de 5 intentos
-    cli = Clientes.query.filter(Clientes.id_cliente == cliente , Clientes.passw == ps, Clientes.status < 5).all()
-    result= clientes_schema.dump(cli)
-    #Si no coinciden el usuario y el password
-    if result==[]:
+    cli = Clientes.query.filter(Clientes.id_cliente == cliente_int, Clientes.passw == ps, Clientes.status < 5).all()
+    result = clientes_schema.dump(cli)
+    
+    # Si no coinciden el usuario y el password
+    if result == []:
         # Chequeo si el usuario existe y si tiene menos de 5 intentos
-        cli = Clientes.query.filter(Clientes.id_cliente == cliente, Clientes.status < 5).all()
-        result= clientes_schema.dump(cli)
-        # Si no existe o si intento + de 5 no pasa, debe reintentar
-        if result==[]:
+        cli = Clientes.query.filter(Clientes.id_cliente == cliente_int, Clientes.status < 5).all()
+        result = clientes_schema.dump(cli)
+        
+        # Si no existe o si intentó + de 5 no pasa, debe reintentar
+        if result == []:
             print("Usuario bloqueado o inexistente")
-            noautorizado=Clientes('','','Usuario bloqueado o inexistente',0)
-            noautorizado=cliente_schema.jsonify(noautorizado)
-            return  noautorizado
-        # Si existe tiene 5 intentos
+            noautorizado = Clientes(0, '', 'Usuario bloqueado o inexistente', 0)
+            return cliente_schema.jsonify(noautorizado)
+        
+        # Si existe, incrementamos el contador de intentos
         else:
-            cli=Clientes.query.get(cliente)
-            cli.status=cli.status+1
-            numint= 5 - cli.status
-            est="Clave incorrecta. " + str(numint) + " intentos restantes"
+            # 2. CORRECCIÓN DE MÉTODO (session.get en lugar de query.get)
+            cli = db.session.get(Clientes, cliente_int)
+            cli.status = cli.status + 1
+            numint = 5 - cli.status
+            est = "Clave incorrecta. " + str(numint) + " intentos restantes"
             print(est)
             db.session.commit()
-            noautorizado=Clientes('','',est,0)
-            noautorizado=cliente_schema.jsonify(noautorizado)
-            return  noautorizado
+            
+            noautorizado = Clientes(0, '', est, 0)
+            return cliente_schema.jsonify(noautorizado)
+            
     else:
         print("Acceso autorizado")
         # Si usuario y clave son correctos reseteo el status
-        cli=Clientes.query.get(cliente)
-        cli.status=0
+        cli = db.session.get(Clientes, cliente_int)
+        cli.status = 0
         db.session.commit()
-        # fields=('id_cliente','name','passw','status')
-        autorizado=Clientes(cliente,cli.name,'','http://127.0.0.1:5500/store.html')
-        autorizado=cliente_schema.jsonify(autorizado)
-        return  autorizado 
+        
+        # 3. CAMBIO DE URL LOCAL A PRODUCCIÓN (Cambia a la web real de New Way)
+        # Reemplaza 'http://127.0.0.1:5500/store.html' por tu URL real de DonWeb
+        url_produccion = 'https://new-way.com.ar' 
+        
+        autorizado = Clientes(cliente_int, cli.name, '', url_produccion)
+        return cliente_schema.jsonify(autorizado)
 
 #Programa Principal
 if __name__ == '__main__':
