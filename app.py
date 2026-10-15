@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from datetime import datetime
 import webbrowser 
+from marshmallow import fields
 
 app=Flask(__name__) #Crea el objeto app de la clase Flask
 CORS(app) #permite acceder desde el front al back
@@ -79,10 +80,10 @@ with app.app_context():
     
 
 class ClientesSchema(ma.Schema):
-    id_cliente = ma.fields.Integer()
-    name = ma.fields.String()
-    passw = ma.fields.String()
-    status = ma.fields.String() # <-- Aceptará la URL como texto plano sin problemas
+    id_cliente = fields.Integer()
+    name = fields.String()
+    passw = fields.String()
+    status = fields.String()  # <-- Recibirá la URL de producción como texto plano sin chistar
 
 cliente_schema = ClientesSchema()
 clientes_schema = ClientesSchema(many=True)
