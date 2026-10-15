@@ -164,69 +164,81 @@ def create_pedido():
     
     return pedido_schema.jsonify(new_pedido)
 
-# Agrega un producto al carrito activo
+# 1. Agrega un producto al carrito activo
 @app.route('/store/pedido/', methods=['POST']) 
 def create_carrito():
-    id_pedido=request.json['id_pedido']
-    cod_art=request.json['cod_art']
-    rubro=request.json['rubro']
-    descripcion=request.json['descripcion']  
-    cantp=request.json['cantp']
-    precio=request.json['precio']
-    subtotal=request.json['subtotal']
-    new_carrito=DetPedidos(id_pedido,cod_art,rubro,descripcion,cantp,precio,subtotal)
+    # Conversión preventiva a enteros para asegurar compatibilidad con Supabase
+    id_pedido = int(request.json['id_pedido'])
+    cod_art = int(request.json['cod_art'])
+    rubro = request.json['rubro']
+    descripcion = request.json['descripcion']  
+    cantp = int(request.json['cantp'])
+    precio = int(request.json['precio'])
+    subtotal = int(request.json['subtotal'])
+    
+    new_carrito = DetPedidos(id_pedido, cod_art, rubro, descripcion, cantp, precio, subtotal)
     db.session.add(new_carrito)
     db.session.commit()
-    new_carrito=detpedido_schema.jsonify(new_carrito)
-    return  new_carrito
+    return detpedido_schema.jsonify(new_carrito)
 
-# Muestra el detalle del pedido
-@app.route('/store/detalle/<pedido>', methods=['GET']) 
+# 2. Muestra el detalle del pedido (CORREGIDO: Fuerza <int:pedido>)
+@app.route('/store/detalle/<int:pedido>', methods=['GET']) 
 def detalle_pedido(pedido):
     all_detalle = DetPedidos.query.filter(DetPedidos.id_pedido == pedido).all()
-    result= detpedidos_schema.dump(all_detalle) #lo heredamos de ma.schema
-                                                #Trae todos los registros de la tabla y los retornamos en un JSON
+    result = detpedidos_schema.dump(all_detalle)
     return jsonify(result)
 
-# Elimina un producto del carrito
-@app.route('/store/<id>',methods=['DELETE'])
+# 3. Elimina un producto del carrito (CORREGIDO: <int:id> y db.session.get)
+@app.route('/store/<int:id>', methods=['DELETE'])
 def delete_prod(id):
-    producto=DetPedidos.query.get(id)
+    producto = db.session.get(DetPedidos, id)
+    if not producto:
+        return jsonify({"error": "Producto no encontrado en el carrito"}), 404
+        
     db.session.delete(producto)
     db.session.commit()
-    return detpedidos_schema.jsonify(producto)   # me devuelve un json con el registro eliminado
+    # Cambiado a detpedido_schema (singular) porque borras UN solo registro, no una lista
+    return detpedido_schema.jsonify(producto)
 
-# Muestra todos los pedidos (STATUS)
-@app.route('/store/status/<cliente>', methods=['GET']) 
+# 4. Muestra todos los pedidos STATUS (CORREGIDO: Fuerza <int:cliente>)
+@app.route('/store/status/<int:cliente>', methods=['GET']) 
 def detalle_status(cliente):
     all_detalle = Pedidos.query.filter(Pedidos.cod_cli == cliente, Pedidos.estado != "E").all()
-    result= pedidos_schema.dump(all_detalle) #lo heredamos de ma.schema  and 
-                                                #Trae todos los registros de la tabla y los retornamos en un JSON
+    result = pedidos_schema.dump(all_detalle)
     return jsonify(result)
 
-# Eliminar pedido (No lo borro, le cambio el estado a E eliminado)
-@app.route('/store/pedido/<id>' ,methods=['PUT'])
+# 5. Eliminar pedido de forma lógica (CORREGIDO: <int:id> y db.session.get)
+@app.route('/store/pedido/<int:id>', methods=['PUT'])
 def delete_pedido(id):
-    user=Pedidos.query.get(id)
-    user.estado="E"
+    user = db.session.get(Pedidos, id)
+    if not user:
+        return jsonify({"error": "Pedido no encontrado"}), 404
+        
+    user.estado = "E"
     db.session.commit()
     return pedidos_schema.jsonify(user)
 
-# Modificar cantidad detalle articulo
-@app.route('/store/modifica/<id>' ,methods=['PUT'])
+# 6. Modificar cantidad detalle artículo (CORREGIDO: <int:id> y db.session.get)
+@app.route('/store/modifica/<int:id>', methods=['PUT'])
 def modifica_detpedido(id):
-    detalle=DetPedidos.query.get(id)
-    detalle.cantp=request.json['cantp']
-    detalle.precio=request.json['precio']
-    detalle.subtotal=request.json['subtotal']
+    detalle = db.session.get(DetPedidos, id)
+    if not detalle:
+        return jsonify({"error": "Detalle no encontrado"}), 404
+        
+    detalle.cantp = int(request.json['cantp'])
+    detalle.precio = int(request.json['precio'])
+    detalle.subtotal = int(request.json['subtotal'])
     db.session.commit()
     return detpedido_schema.jsonify(detalle)
 
-# Cerrar pedido
-@app.route('/store/cerrar/<id>' ,methods=['PUT'])
+# 7. Cerrar pedido (CORREGIDO: <int:id> y db.session.get)
+@app.route('/store/cerrar/<int:id>', methods=['PUT'])
 def close_pedido(id):
-    user=Pedidos.query.get(id)
-    user.estado="C"
+    user = db.session.get(Pedidos, id)
+    if not user:
+        return jsonify({"error": "Pedido no encontrado"}), 404
+        
+    user.estado = "C"
     db.session.commit()
     return pedidos_schema.jsonify(user)
 
