@@ -61,20 +61,32 @@ class DetPedidos(db.Model):
         self.precio = precio
         self.subtotal = subtotal
 
+
 #Base de datos clientes
-class Clientes(db.Model):
-    id_cliente = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    passw = db.Column(db.String(256))
-    status = db.Column(db.Integer)
-    def __init__(self,id_cliente,name,passw,status):
-        self.id_cliente = id_cliente
-        self.name = name
-        self.passw = passw
-        self.status = status
+#class Clientes(db.Model):
+#    id_cliente = db.Column(db.Integer, primary_key=True)
+#    name = db.Column(db.String(100))
+#    passw = db.Column(db.String(256))
+#    status = db.Column(db.Integer)
+#    def __init__(self,id_cliente,name,passw,status):
+#        self.id_cliente = id_cliente
+#        self.name = name
+#        self.passw = passw
+#        self.status = status
 
 with app.app_context():
     db.create_all() #Crea las tablas
+    
+
+class ClientesSchema(ma.Schema):
+    id_cliente = fields.Integer()
+    name = fields.String()
+    passw = fields.String()
+    status = fields.String()  # <-- Al declararlo como String, aceptará la URL sin dar ValueError
+
+cliente_schema = ClientesSchema()
+clientes_schema = ClientesSchema(many=True)
+
 
 # Modificación de Esquemas para compatibilidad con Python moderno y Supabase
 class ArticulosSchema(ma.SQLAlchemyAutoSchema):
@@ -112,6 +124,8 @@ class ClientesSchema(ma.SQLAlchemyAutoSchema):
     
 cliente_schema=ClientesSchema()
 clientes_schema=ClientesSchema(many=True)
+
+
 
 #--------------------------------------------------------------------------------------#
 #                                    Endpoints
@@ -260,6 +274,7 @@ def autorizar(cliente, ps):
         # Definimos la URL de redirección real en DonWeb
         url_produccion = 'https://new-way.com.ar/store.html'
         
+        # Estructura del objeto genérico independiente de la BD
         class ObjetoLogin:
             pass
 
@@ -269,7 +284,6 @@ def autorizar(cliente, ps):
         autorizado.passw = 'Acceso Autorizado' # Lo que Vue guarda en 'this.status'
         autorizado.status = url_produccion     # Lo que Vue guarda en 'urlfinal'
         
-        # Marshmallow leerá las propiedades del objeto y armará el JSON perfecto para Vue
         return cliente_schema.jsonify(autorizado)
 
 #Programa Principal
