@@ -216,7 +216,7 @@ def delete_pedido(id):
         
     user.estado = "E"
     db.session.commit()
-    return pedidos_schema.jsonify(user)
+    return pedido_schema.jsonify(user)
 
 # 6. Modificar cantidad detalle artículo (CORREGIDO: <int:id> y db.session.get)
 @app.route('/store/modifica/<int:id>', methods=['PUT'])
@@ -240,7 +240,7 @@ def close_pedido(id):
         
     user.estado = "C"
     db.session.commit()
-    return pedidos_schema.jsonify(user)
+    return pedido_schema.jsonify(user)
 
 #Login
 @app.route('/login/<cliente>/<ps>', methods=['GET'])
