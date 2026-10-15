@@ -139,10 +139,11 @@ def get_articulo(txtsearch):
     all_articulos = Articulos.query.filter(
         Articulos.descripcion.ilike(txtsearch_format) | 
         Articulos.rubro.ilike(txtsearch_format) | 
-        Articulos.id_articulo.cast(db.String).ilike(txtsearch_format) # <-- CORRECCIÓN CRUCIAL: Convertimos el entero a String
+        Articulos.id_articulo.cast(db.String).ilike(txtsearch_format)
     ).order_by(Articulos.rubro, Articulos.descripcion).all()
-        result= articulos_schema.dump(all_articulos) #lo heredamos de ma.schema
-                                                    #Trae todos los registros de la tabla y los retornamos en un JSON
+    
+    # CORRECCIÓN DE INDENTACIÓN: Aseguramos que tengan exactamente 4 espacios desde el inicio
+    result = articulos_schema.dump(all_articulos)
     return jsonify(result)
 
 # Crea un pedido nuevo
