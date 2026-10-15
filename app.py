@@ -149,14 +149,20 @@ def get_articulo(txtsearch):
 # Crea un pedido nuevo
 @app.route('/store', methods=['POST']) 
 def create_pedido():
-    cod_cli=request.json['cod_cli']
-    fecha=request.json['fecha']
-    estado=request.json['estado']  
-    new_pedido=Pedidos(cod_cli,fecha,estado)
+    cod_cli = request.json['cod_cli']
+    fecha_completa = request.json['fecha'] # Recibe '2026-10-15T13:33:51.680Z'
+    estado = request.json['estado']  
+    
+    # Esto transformará el valor en '2026-10-15T13:33:51', midiendo exactamente 19 caracteres
+    fecha_recortada = fecha_completa[:19]
+    
+    # Creamos el registro con la fecha adaptada al tamaño de la columna
+    new_pedido = Pedidos(cod_cli, fecha_recortada, estado)
+    
     db.session.add(new_pedido)
     db.session.commit()
-    new_pedido=pedido_schema.jsonify(new_pedido)
-    return  new_pedido
+    
+    return pedido_schema.jsonify(new_pedido)
 
 # Agrega un producto al carrito activo
 @app.route('/store/pedido/', methods=['POST']) 
