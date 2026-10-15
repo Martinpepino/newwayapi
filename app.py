@@ -1,4 +1,4 @@
-from flask import Flask,jsonify,request
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -6,54 +6,56 @@ from datetime import datetime
 import webbrowser 
 from marshmallow import fields
 
-app=Flask(__name__) #Crea el objeto app de la clase Flask
-CORS(app) #permite acceder desde el front al back
+app = Flask(__name__) # Crea el objeto app de la clase Flask
+CORS(app) # Permite acceder desde el front al back
 
-# configuro la base de datos, con el nombre el usuario y la clave
-# app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://user:password@localhost/proyecto'
-app.config['SQLALCHEMY_DATABASE_URI']='postgresql+psycopg://postgres.zbbjbvrljeojnuhykgra:Newway42302016@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
-# URI de la BBDD                          driver de la BD  user:clave@URLBBDD/nombreBBDD
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False #none
-db= SQLAlchemy(app)   #crea el objeto db de la clase SQLAlquemy
-ma=Marshmallow(app)   #crea el objeto ma de de la clase Marshmallow
+# Configuración de la base de datos apuntando a Supabase
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg://postgres.zbbjbvrljeojnuhykgra:Newway42302016@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
 
-# ---------fin configuracion-----------
+db = SQLAlchemy(app)   # Crea el objeto db de la clase SQLAlchemy
+ma = Marshmallow(app)   # Crea el objeto ma de la clase Marshmallow
 
-#Definicion y creacion de las tablas
-#Base de datos de articulos
+# --------- Fin configuración -----------
+
+# Definición de las tablas de la Base de Datos
+
+# Base de datos de artículos
 class Articulos(db.Model):
-    id_articulo=db.Column(db.Integer, primary_key=True)
-    rubro=db.Column(db.String(25))
-    descripcion=db.Column(db.String(40))
-    precio=db.Column(db.Integer)
-    stock=db.Column(db.Integer)
-    def __init__(self,id_articulo,rubro,descripcion,precio,stock):
+    id_articulo = db.Column(db.Integer, primary_key=True)
+    rubro = db.Column(db.String(25))
+    descripcion = db.Column(db.String(40))
+    precio = db.Column(db.Integer)
+    stock = db.Column(db.Integer)
+    def __init__(self, id_articulo, rubro, descripcion, precio, stock):
         self.id_articulo = id_articulo
         self.rubro = rubro
         self.descripcion = descripcion
         self.precio = precio
         self.stock = stock
-#Base de datos de los pedidos de los clientes
+
+# Base de datos de los pedidos de los clientes
 class Pedidos(db.Model):
-    id_pedido=db.Column(db.Integer, primary_key=True)
-    cod_cli=db.Column(db.Integer)
-    fecha=db.Column(db.String(19))
-    estado=db.Column(db.String(1))
-    def __init__(self,cod_cli,fecha,estado):
+    id_pedido = db.Column(db.Integer, primary_key=True)
+    cod_cli = db.Column(db.Integer)
+    fecha = db.Column(db.String(19))
+    estado = db.Column(db.String(1))
+    def __init__(self, cod_cli, fecha, estado):
         self.cod_cli = cod_cli
         self.fecha = fecha
         self.estado = estado
-#Base de datos del detalle del pedido de los clientes
+
+# Base de datos del detalle del pedido de los clientes
 class DetPedidos(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     id_pedido = db.Column(db.Integer)
     cod_art = db.Column(db.Integer)
-    rubro=db.Column(db.String(25))
+    rubro = db.Column(db.String(25))
     descripcion = db.Column(db.String(40))
     cantp = db.Column(db.Integer)
     precio = db.Column(db.Integer)
     subtotal = db.Column(db.Integer)    
-    def __init__(self,id_pedido,cod_art,rubro,descripcion,cantp,precio,subtotal):
+    def __init__(self, id_pedido, cod_art, rubro, descripcion, cantp, precio, subtotal):
         self.id_pedido = id_pedido
         self.cod_art = cod_art
         self.rubro = rubro
@@ -62,42 +64,42 @@ class DetPedidos(db.Model):
         self.precio = precio
         self.subtotal = subtotal
 
-
-#Base de datos clientes
-#class Clientes(db.Model):
-#    id_cliente = db.Column(db.Integer, primary_key=True)
-#    name = db.Column(db.String(100))
-#    passw = db.Column(db.String(256))
-#    status = db.Column(db.Integer)
-#    def __init__(self,id_cliente,name,passw,status):
-#        self.id_cliente = id_cliente
-#        self.name = name
-#        self.passw = passw
-#        self.status = status
+# Base de datos clientes (DESCOMENTADA Y ACTIVA)
+class Clientes(db.Model):
+    id_cliente = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    passw = db.Column(db.String(256))
+    status = db.Column(db.Integer)
+    def __init__(self, id_cliente, name, passw, status):
+        self.id_cliente = id_cliente
+        self.name = name
+        self.passw = passw
+        self.status = status
 
 with app.app_context():
-    db.create_all() #Crea las tablas
-    
+    db.create_all() # Crea las tablas en Supabase si no existen
 
+# Definición de Esquemas de serialización (Marshmallow)
+
+# Esquema Manual para Clientes (Evita errores de tipos con la URL del catálogo)
 class ClientesSchema(ma.Schema):
     id_cliente = fields.Integer()
     name = fields.String()
     passw = fields.String()
-    status = fields.String()  # <-- Recibirá la URL de producción como texto plano sin chistar
+    status = fields.String()  # Recibe la URL de producción como texto plano sin chistar
 
 cliente_schema = ClientesSchema()
 clientes_schema = ClientesSchema(many=True)
 
-
-# Modificación de Esquemas para compatibilidad con Python moderno y Supabase
+# Esquemas automáticos para el resto de las tablas
 class ArticulosSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Articulos
         load_instance = True
         sqla_session = db.session
     
-articulo_schema=ArticulosSchema()
-articulos_schema=ArticulosSchema(many=True)
+articulo_schema = ArticulosSchema()
+articulos_schema = ArticulosSchema(many=True)
 
 class PedidosSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -105,8 +107,8 @@ class PedidosSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
         sqla_session = db.session
     
-pedido_schema=PedidosSchema()
-pedidos_schema=PedidosSchema(many=True)
+pedido_schema = PedidosSchema()
+pedidos_schema = PedidosSchema(many=True)
 
 class DetPedidosSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
@@ -114,19 +116,8 @@ class DetPedidosSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
         sqla_session = db.session
     
-detpedido_schema=DetPedidosSchema()
-detpedidos_schema=DetPedidosSchema(many=True)
-
-class ClientesSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Clientes
-        load_instance = True
-        sqla_session = db.session
-    
-cliente_schema=ClientesSchema()
-clientes_schema=ClientesSchema(many=True)
-
-
+detpedido_schema = DetPedidosSchema()
+detpedidos_schema = DetPedidosSchema(many=True)
 
 #--------------------------------------------------------------------------------------#
 #                                    Endpoints
