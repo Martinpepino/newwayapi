@@ -79,10 +79,10 @@ with app.app_context():
     
 
 class ClientesSchema(ma.Schema):
-    id_cliente = fields.Integer()
-    name = fields.String()
-    passw = fields.String()
-    status = fields.String()  # <-- Al declararlo como String, aceptará la URL sin dar ValueError
+    id_cliente = ma.fields.Integer()
+    name = ma.fields.String()
+    passw = ma.fields.String()
+    status = ma.fields.String() # <-- Aceptará la URL como texto plano sin problemas
 
 cliente_schema = ClientesSchema()
 clientes_schema = ClientesSchema(many=True)
