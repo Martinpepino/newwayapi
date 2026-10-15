@@ -252,16 +252,24 @@ def autorizar(cliente, ps):
             
     else:
         print("Acceso autorizado")
-        # Si usuario y clave son correctos reseteo el status
+        # Si usuario y clave son correctos reseteo el status en la base de datos
         cli = db.session.get(Clientes, cliente_int)
         cli.status = 0
         db.session.commit()
         
-        # 3. CAMBIO DE URL LOCAL A PRODUCCIÓN (Cambia a la web real de New Way)
-        # Reemplaza 'http://127.0.0.1:5500/store.html' por tu URL real de DonWeb
-        url_produccion = 'https://new-way.com.ar/store.html' 
+        # Definimos la URL de redirección real en DonWeb
+        url_produccion = 'https://new-way.com.ar/store.html'
         
-        autorizado = Clientes(cliente_int, cli.name, '', url_produccion)
+        class ObjetoLogin:
+            pass
+
+        autorizado = ObjetoLogin()
+        autorizado.id_cliente = cliente_int
+        autorizado.name = cli.name
+        autorizado.passw = 'Acceso Autorizado' # Lo que Vue guarda en 'this.status'
+        autorizado.status = url_produccion     # Lo que Vue guarda en 'urlfinal'
+        
+        # Marshmallow leerá las propiedades del objeto y armará el JSON perfecto para Vue
         return cliente_schema.jsonify(autorizado)
 
 #Programa Principal
