@@ -259,7 +259,7 @@ def autorizar(cliente, ps):
         
         # 3. CAMBIO DE URL LOCAL A PRODUCCIÓN (Cambia a la web real de New Way)
         # Reemplaza 'http://127.0.0.1:5500/store.html' por tu URL real de DonWeb
-        url_produccion = 'https://new-way.com.ar' 
+        url_produccion = 'https://new-way.com.ar/store.html' 
         
         autorizado = Clientes(cliente_int, cli.name, '', url_produccion)
         return cliente_schema.jsonify(autorizado)
