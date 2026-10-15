@@ -134,9 +134,15 @@ def get_Articulos():
 #Realiza la busqueda inteligente
 @app.route('/store/<txtsearch>',methods=['GET'])
 def get_articulo(txtsearch):
-    all_articulos = Articulos.query.filter(Articulos.descripcion.ilike(f'%{txtsearch}%') | Articulos.rubro.ilike(f'%{txtsearch}%') | Articulos.id_articulo.ilike(f'%{txtsearch}%')).order_by(Articulos.rubro , Articulos.descripcion).all()
-    result= articulos_schema.dump(all_articulos) #lo heredamos de ma.schema
-                                                #Trae todos los registros de la tabla y los retornamos en un JSON
+    txtsearch_format = f'%{txtsearch}%'
+    
+    all_articulos = Articulos.query.filter(
+        Articulos.descripcion.ilike(txtsearch_format) | 
+        Articulos.rubro.ilike(txtsearch_format) | 
+        Articulos.id_articulo.cast(db.String).ilike(txtsearch_format) # <-- CORRECCIÓN CRUCIAL: Convertimos el entero a String
+    ).order_by(Articulos.rubro, Articulos.descripcion).all()
+        result= articulos_schema.dump(all_articulos) #lo heredamos de ma.schema
+                                                    #Trae todos los registros de la tabla y los retornamos en un JSON
     return jsonify(result)
 
 # Crea un pedido nuevo
