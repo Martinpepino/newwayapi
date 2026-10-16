@@ -283,23 +283,30 @@ def autorizar(cliente, ps):
             
     else:
         print("Acceso autorizado")
-        # Si usuario y clave son correctos reseteo el status en la base de datos
+        # Si usuario y clave son correctos reseteo el status
         cli = db.session.get(Clientes, cliente_int)
         cli.status = 0
         db.session.commit()
         
-        # Definimos la URL de redirección real en DonWeb
-        url_produccion = 'https://new-way.com.ar/store.html'
+        # Si te llamaron desde ://new-way.com.ar, devolverá esa URL. Si fue sin www, devolverá esa.
+        origen_frontend = request.headers.get('Origin')
         
-        # Estructura del objeto genérico independiente de la BD
+        # En caso de que por alguna razón extrema no capte el origen, dejamos tu dominio por defecto
+        if not origen_frontend:
+            origen_frontend = 'https://new-way.com.ar'
+            
+        # Armamos la ruta final respetando exactamente las pestañas del navegador del usuario
+        url_store = f"{origen_frontend}/store.html"
+        
+        # Creamos el objeto genérico para Marshmallow (el truco que ya teníamos)
         class ObjetoLogin:
             pass
 
         autorizado = ObjetoLogin()
         autorizado.id_cliente = cliente_int
         autorizado.name = cli.name
-        autorizado.passw = 'Acceso Autorizado' # Lo que Vue guarda en 'this.status'
-        autorizado.status = url_produccion     # Lo que Vue guarda en 'urlfinal'
+        autorizado.passw = 'Acceso Autorizado'
+        autorizado.status = url_store # <-- Aquí viaja la URL dinámica perfecta
         
         return cliente_schema.jsonify(autorizado)
 
