@@ -8,7 +8,11 @@ from marshmallow import fields
 
 app = Flask(__name__) # Crea el objeto app de la clase Flask
 CORS(app) # Permite acceder desde el front al back
-
+# Le damos permiso explícito a DonWeb con y sin WWW para conectarse a Supabase y Render
+CORS(app, origins=[
+    "https://new-way.com.ar",
+    "https://www.new-way.com.ar"
+])
 # Configuración de la base de datos apuntando a Supabase
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg://postgres.zbbjbvrljeojnuhykgra:Newway42302016@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
