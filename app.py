@@ -257,7 +257,7 @@ def close_pedido(id):
     
     # CONDICIÓN 1: El NOMBRE del archivo exige 5 dígitos fijos obligatorios con ceros
     codigo_cliente_5_digitos = f"{pedido.cod_cli:05d}"
-    nombre_archivo = f"{ahora.strftime('%Y%m%d%H%M%S')}{codigo_cliente_5_digitos}1.txt"
+    nombre_archivo = f"{ahora.strftime('%Y%m%d%H%M')}{codigo_cliente_5_digitos}1.txt"
     
     # CONDICIÓN 2: El CONTENIDO del archivo usa el ID natural separado por punto y coma (;)
     # Si el cliente es el 38, aquí pondrá directamente "38" sin ceros adicionales
