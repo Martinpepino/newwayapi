@@ -236,7 +236,7 @@ def modifica_detpedido(id):
     db.session.commit()
     return detpedido_schema.jsonify(detalle)
 
-# 7. Cerrar pedido y empaquetar datos para el TXT
+# 7. Cerrar pedido y empaquetar datos para el TXT (Campos dinámicos e independientes)
 @app.route('/store/cerrar/<int:id>', methods=['PUT'])
 def close_pedido(id):
     # Buscamos el pedido en Supabase
@@ -255,21 +255,22 @@ def close_pedido(id):
     zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
     ahora = datetime.now(zona_horaria)
     
-    # Creamos el nombre del archivo con el formato: ANIO MES DIA HORA MINUTO SEGUNDO + CODCLIENTE + 1
-    # Ejemplo: 20261019092144381.txt
-    nombre_archivo = f"{ahora.strftime('%Y%m%d%H%M%S')}{pedido.cod_cli}1.txt"
+    # CONDICIÓN 1: El NOMBRE del archivo exige 5 dígitos fijos obligatorios con ceros
+    codigo_cliente_5_digitos = f"{pedido.cod_cli:05d}"
+    nombre_archivo = f"{ahora.strftime('%Y%m%d%H%M%S')}{codigo_cliente_5_digitos}1.txt"
     
-    # Generamos las líneas del archivo TXT con el formato requerido:
-    # numero de cliente;codigo de articulo;cantidad;0;0;;F
+    # CONDICIÓN 2: El CONTENIDO del archivo usa el ID natural separado por punto y coma (;)
+    # Si el cliente es el 38, aquí pondrá directamente "38" sin ceros adicionales
     lineas_txt = []
     for art in all_detalle:
+        # Formato exacto: 38;20608;3;0;0;;F
         linea = f"{pedido.cod_cli};{art.cod_art};{art.cantp};0;0;viaWEB;F"
         lineas_txt.append(linea)
     
     # Unimos todas las líneas con saltos de línea para armar el cuerpo del archivo
     contenido_txt = "\n".join(lineas_txt)
     
-    # Retornamos un JSON para que Vue sepa el nombre del archivo y lo que debe guardar
+    # Retornamos el JSON para tu JavaScript en DonWeb
     return jsonify({
         "status": "success",
         "mensaje": "Pedido cerrado en Supabase correctamente",
