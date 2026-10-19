@@ -5,6 +5,7 @@ from flask_marshmallow import Marshmallow
 from datetime import datetime
 import webbrowser 
 from marshmallow import fields
+import pytz
 
 app = Flask(__name__) # Crea el objeto app de la clase Flask
 CORS(app) # Permite acceder desde el front al back
@@ -235,16 +236,46 @@ def modifica_detpedido(id):
     db.session.commit()
     return detpedido_schema.jsonify(detalle)
 
-# 7. Cerrar pedido (CORREGIDO: <int:id> y db.session.get)
+# 7. Cerrar pedido y empaquetar datos para el TXT
 @app.route('/store/cerrar/<int:id>', methods=['PUT'])
 def close_pedido(id):
-    user = db.session.get(Pedidos, id)
-    if not user:
+    # Buscamos el pedido en Supabase
+    pedido = db.session.get(Pedidos, id)
+    if not pedido:
         return jsonify({"error": "Pedido no encontrado"}), 404
         
-    user.estado = "C"
+    # Cambiamos el estado a 'C' (Cerrado) y guardamos en Supabase
+    pedido.estado = "C"
     db.session.commit()
-    return pedido_schema.jsonify(user)
+    
+    # Buscamos todos los artículos relacionados con este pedido en el carrito
+    all_detalle = DetPedidos.query.filter(DetPedidos.id_pedido == id).all()
+    
+    # Obtenemos la fecha y hora de cierre real de Argentina
+    zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
+    ahora = datetime.now(zona_horaria)
+    
+    # Creamos el nombre del archivo con el formato: ANIO MES DIA HORA MINUTO SEGUNDO + CODCLIENTE + 1
+    # Ejemplo: 20261019092144381.txt
+    nombre_archivo = f"{ahora.strftime('%Y%m%d%H%M%S')}{pedido.cod_cli}1.txt"
+    
+    # Generamos las líneas del archivo TXT con el formato requerido:
+    # numero de cliente;codigo de articulo;cantidad;0;0;;F
+    lineas_txt = []
+    for art in all_detalle:
+        linea = f"{pedido.cod_cli};{art.cod_art};{art.cantp};0;0;viaWEB;F"
+        lineas_txt.append(linea)
+    
+    # Unimos todas las líneas con saltos de línea para armar el cuerpo del archivo
+    contenido_txt = "\n".join(lineas_txt)
+    
+    # Retornamos un JSON para que Vue sepa el nombre del archivo y lo que debe guardar
+    return jsonify({
+        "status": "success",
+        "mensaje": "Pedido cerrado en Supabase correctamente",
+        "nombre_archivo": nombre_archivo,
+        "contenido_txt": contenido_txt
+    })
 
 #Login
 @app.route('/login/<cliente>/<ps>', methods=['GET'])
