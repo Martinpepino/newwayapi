@@ -364,9 +364,9 @@ def ejecutar_sql_remoto():
         instrucciones = consultas_sql.split(';')
         
         # 2. Abrimos un bloque de ejecución limpia directamente en la base de datos
-        for章 instruccion in instrucciones:
+        for instruccion in instrucciones: 
             query_limpia = instruccion.strip()
-            if query_limpia: # Ignoramos líneas vacías
+            if query_limpia:  # Ignoramos líneas vacías
                 db.session.execute(text(query_limpia))
                 
         # Confirmamos los cambios de forma permanente en Supabase
@@ -374,7 +374,7 @@ def ejecutar_sql_remoto():
         return jsonify({"status": "success", "mensaje": "Base de datos actualizada en Supabase con éxito"})
         
     except Exception as e:
-        db.session.rollback() # Cancelamos si alguna instrucción falla
+        db.session.rollback()  # Cancelamos si alguna instrucción falla
         print("Error SQL:", str(e))
         return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
     finally:
