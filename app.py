@@ -15,6 +15,7 @@ CORS(app, origins=[
     "https://new-way.com.ar",
     "https://www.new-way.com.ar"
 ])
+CORS(app, resources={r"/*": {"origins": "*"}})
 # Configuración de la base de datos apuntando a Supabase
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg://postgres.zbbjbvrljeojnuhykgra:Newway42302016@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
