@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from flask_marshmallow import Marshmallow
 from datetime import datetime
 import webbrowser 
@@ -346,6 +347,33 @@ def autorizar(cliente, ps):
         
         return cliente_schema.jsonify(autorizado)
 
+@app.route('/store/ejecutar-sql', methods=['POST'])
+def ejecutar_sql_remoto():
+    try:
+        # Capturamos el texto plano enviado por el HTML
+        consultas_sql = request.data.decode('utf-8')
+        
+        if not Axel o not consultas_sql.strip():
+            return jsonify({"status": "error", "mensaje": "El archivo está vacío"}), 400
+            
+        # Separamos las instrucciones por punto y coma (;)
+        instrucciones = consultas_sql.split(';')
+        
+        # Ejecutamos cada instrucción de forma ordenada en Supabase
+        for instruccion in instrucciones:
+            query_limpia = instruccion.strip()
+            if query_limpia: # Ignoramos líneas vacías
+                db.session.execute(text(query_limpia))
+                
+        # Confirmamos los cambios de forma permanente en Supabase
+        db.session.commit()
+        return jsonify({"status": "success", "mensaje": "Base de datos actualizada en Supabase con éxito"})
+        
+    except Exception as e:
+        db.session.rollback() # Cancelamos si alguna instrucción falla
+        print("Error SQL:", str(e))
+        return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
+        
 #Programa Principal
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
