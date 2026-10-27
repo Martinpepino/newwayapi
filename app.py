@@ -351,18 +351,20 @@ def autorizar(cliente, ps):
 @app.route('/store/ejecutar-sql', methods=['POST'])
 def ejecutar_sql_remoto():
     try:
+        # 1. Forzamos la limpieza de cualquier transacción colgada en el canal SSL
+        db.session.remove()
+        
         # Capturamos el texto plano enviado por el HTML
         consultas_sql = request.data.decode('utf-8')
         
-        # CORRECCIÓN CRUCIAL: Evaluamos limpiamente si el archivo vino vacío
         if not consultas_sql or not consultas_sql.strip():
             return jsonify({"status": "error", "mensaje": "El archivo está vacío"}), 400
             
         # Separamos las instrucciones por punto y coma (;)
         instrucciones = consultas_sql.split(';')
         
-        # Ejecutamos cada instrucción de forma ordenada en Supabase
-        for instruccion in instrucciones:
+        # 2. Abrimos un bloque de ejecución limpia directamente en la base de datos
+        for章 instruccion in instrucciones:
             query_limpia = instruccion.strip()
             if query_limpia: # Ignoramos líneas vacías
                 db.session.execute(text(query_limpia))
@@ -375,11 +377,9 @@ def ejecutar_sql_remoto():
         db.session.rollback() # Cancelamos si alguna instrucción falla
         print("Error SQL:", str(e))
         return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
-        
-    except Exception as e:
-        db.session.rollback() # Cancelamos si alguna instrucción falla
-        print("Error SQL:", str(e))
-        return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
+    finally:
+        # 3. Cerramos la conexión al terminar para liberar el pooler de Supabase
+        db.session.remove()
         
 #Programa Principal
 if __name__ == '__main__':
