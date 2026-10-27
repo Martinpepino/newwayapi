@@ -351,36 +351,39 @@ def autorizar(cliente, ps):
 @app.route('/store/ejecutar-sql', methods=['POST'])
 def ejecutar_sql_remoto():
     try:
-        # Forzamos la limpieza preventiva de cualquier consulta previa colgada en la red
+        # 1. TRUCO DE INFRAESTRUCTURA: Destruimos el pool de conexiones actual.
+        # Esto obliga a revocar canales SSL viejos o colgados antes de la actualización.
         db.session.remove()
+        db.engine.dispose()
         
-        # Capturamos el texto enviado por el HTML y lo pasamos a minúsculas
+        # Capturamos el texto enviado por el HTML y lo forzamos a minúsculas
         consultas_raw = request.data.decode('utf-8').lower()
         
         if not consultas_raw or not consultas_raw.strip():
             return jsonify({"status": "error", "mensaje": "El archivo está vacío"}), 400
             
-        # Limpiamos retornos de carro de Windows (\r) y separamos por punto y coma
+        # Limpiamos retornos de carro (\r) y separamos por punto y coma (;)
         instrucciones = consultas_raw.replace('\r', '').split(';')
         
-        # Ejecutamos cada instrucción de forma aislada e independiente
+        # 2. Ejecutamos cada instrucción a través de un canal de transacción nuevo
         for instruccion in instrucciones:
             query_limpia = instruccion.strip()
             # Ignoramos líneas vacías o comentarios
             if query_limpia and not query_limpia.startswith('--'):
                 db.session.execute(text(query_limpia))
                 
-        # Confirmamos de forma permanente en Supabase
+        # Confirmamos los cambios de forma permanente en Supabase
         db.session.commit()
         return jsonify({"status": "success", "mensaje": "¡Base de datos New Way actualizada con éxito!"})
         
     except Exception as e:
-        db.session.rollback() # Cancelamos todo el bloque si una sola línea falla
-        print("Error crítico SQL:", str(e))
+        db.session.rollback() # Cancelamos todo el bloque si algo falla
+        print("Error crítico SSL/SQL:", str(e))
         return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
     finally:
-        # Liberamos el pooler de Supabase obligatoriamente al terminar
+        # 3. Cerramos y limpiamos la sesión al terminar para liberar el pooler
         db.session.remove()
+        db.engine.dispose()
         
 #Programa Principal
 if __name__ == '__main__':
