@@ -351,43 +351,41 @@ def autorizar(cliente, ps):
 @app.route('/store/ejecutar-sql', methods=['POST'])
 def ejecutar_sql_remoto():
     try:
-        # Capturamos el texto enviado por el HTML y lo pasamos a minúsculas
-        consultas_raw = request.data.decode('utf-8').lower()
+        # Forzamos la limpieza preventiva de cualquier consulta previa colgada en la red
+        db.session.remove()
+        
+        # Capturamos el texto completo enviado por el HTML
+        consultas_raw = request.data.decode('utf-8')
         
         if not consultas_raw or not consultas_raw.strip():
             return jsonify({"status": "error", "mensaje": "El archivo está vacío"}), 400
             
-        # Limpiamos retornos de carro de Windows (\r) y separamos por punto y coma (;)
-        instrucciones = consultas_raw.replace('\r', '').split(';')
+        # 1. TRUCO DE ALTO RENDIMIENTO: Limpiamos los retornos de carro de Windows (\r)
+        # pero MANTENEMOS el bloque SQL unido completo en minúsculas.
+        script_sql_completo = consultas_raw.replace('\r', '').lower().strip()
         
-        # TRUCO DE BAJO CONSUMO: Usamos la conexión cruda nativa del driver de Supabase.
-        # Esto salta el mapeo pesado de SQLAlchemy, consumiendo 0 MB extras de RAM.
+        # 2. Abrimos la conexión directa nativa
         conn = db.engine.raw_connection()
         cursor = conn.cursor()
         
         try:
-            # Ejecutamos cada instrucción de forma secuencial y limpia
-            for instruccion in instrucciones:
-                query_limpia = instruccion.strip()
-                # Ignoramos líneas vacías o comentarios de SQL
-                if query_limpia and not query_limpia.startswith('--'):
-                    cursor.execute(query_limpia)
-            
-            # Confirmamos los cambios de forma permanente en Supabase
+            # 3. EJECUCIÓN MASIVA: Enviamos el archivo completo en un solo viaje de red.
+            # Al no hacer un bucle 'for' en Python, Supabase lo procesa en microsegundos 
+            # y se evita por completo el WORKER TIMEOUT de 30 segundos.
+            cursor.execute(script_sql_completo)
             conn.commit()
             
         except Exception as sql_err:
-            conn.rollback() # Cancelamos el lote si una línea falla
+            conn.rollback()
             raise sql_err
         finally:
-            # Cerramos el cursor y el canal de red inmediatamente para liberar memoria
             cursor.close()
             conn.close()
             
-        return jsonify({"status": "success", "mensaje": "¡Base de datos New Way actualizada con éxito!"})
+        return jsonify({"status": "success", "mensaje": "¡Base de datos New Way actualizada masivamente con éxito!"})
         
     except Exception as e:
-        print("Error en ejecución SQL cruda:", str(e))
+        print("Error en ejecución SQL masiva:", str(e))
         return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
         
 #Programa Principal
