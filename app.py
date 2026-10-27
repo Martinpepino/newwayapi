@@ -353,7 +353,8 @@ def ejecutar_sql_remoto():
         # Capturamos el texto plano enviado por el HTML
         consultas_sql = request.data.decode('utf-8')
         
-        if not Axel o not consultas_sql.strip():
+        # CORRECCIÓN CRUCIAL: Evaluamos limpiamente si el archivo vino vacío
+        if not consultas_sql or not consultas_sql.strip():
             return jsonify({"status": "error", "mensaje": "El archivo está vacío"}), 400
             
         # Separamos las instrucciones por punto y coma (;)
@@ -368,6 +369,11 @@ def ejecutar_sql_remoto():
         # Confirmamos los cambios de forma permanente en Supabase
         db.session.commit()
         return jsonify({"status": "success", "mensaje": "Base de datos actualizada en Supabase con éxito"})
+        
+    except Exception as e:
+        db.session.rollback() # Cancelamos si alguna instrucción falla
+        print("Error SQL:", str(e))
+        return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
         
     except Exception as e:
         db.session.rollback() # Cancelamos si alguna instrucción falla
