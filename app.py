@@ -351,34 +351,35 @@ def autorizar(cliente, ps):
 @app.route('/store/ejecutar-sql', methods=['POST'])
 def ejecutar_sql_remoto():
     try:
-        # 1. Forzamos la limpieza de cualquier transacción colgada en el canal SSL
+        # Forzamos la limpieza preventiva de cualquier consulta previa colgada en la red
         db.session.remove()
         
-        # Capturamos el texto plano enviado por el HTML
-        consultas_sql = request.data.decode('utf-8')
+        # Capturamos el texto enviado por el HTML y lo pasamos a minúsculas
+        consultas_raw = request.data.decode('utf-8').lower()
         
-        if not consultas_sql or not consultas_sql.strip():
+        if not consultas_raw or not consultas_raw.strip():
             return jsonify({"status": "error", "mensaje": "El archivo está vacío"}), 400
             
-        # Separamos las instrucciones por punto y coma (;)
-        instrucciones = consultas_sql.split(';')
+        # Limpiamos retornos de carro de Windows (\r) y separamos por punto y coma
+        instrucciones = consultas_raw.replace('\r', '').split(';')
         
-        # 2. Abrimos un bloque de ejecución limpia directamente en la base de datos
-        for instruccion in instrucciones: 
+        # Ejecutamos cada instrucción de forma aislada e independiente
+        for instruccion in instrucciones:
             query_limpia = instruccion.strip()
-            if query_limpia:  # Ignoramos líneas vacías
+            # Ignoramos líneas vacías o comentarios
+            if query_limpia and not query_limpia.startswith('--'):
                 db.session.execute(text(query_limpia))
                 
-        # Confirmamos los cambios de forma permanente en Supabase
+        # Confirmamos de forma permanente en Supabase
         db.session.commit()
-        return jsonify({"status": "success", "mensaje": "Base de datos actualizada en Supabase con éxito"})
+        return jsonify({"status": "success", "mensaje": "¡Base de datos New Way actualizada con éxito!"})
         
     except Exception as e:
-        db.session.rollback()  # Cancelamos si alguna instrucción falla
-        print("Error SQL:", str(e))
+        db.session.rollback() # Cancelamos todo el bloque si una sola línea falla
+        print("Error crítico SQL:", str(e))
         return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
     finally:
-        # 3. Cerramos la conexión al terminar para liberar el pooler de Supabase
+        # Liberamos el pooler de Supabase obligatoriamente al terminar
         db.session.remove()
         
 #Programa Principal
