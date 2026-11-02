@@ -139,19 +139,30 @@ def get_Articulos():
     return jsonify(result)
 
 #Realiza la busqueda inteligente
-@app.route('/store/<txtsearch>',methods=['GET'])
-def get_articulo(txtsearch):
-    txtsearch_format = f'%{txtsearch}%'
-    
-    all_articulos = Articulos.query.filter(
-        Articulos.descripcion.ilike(txtsearch_format) | 
-        Articulos.rubro.ilike(txtsearch_format) | 
-        Articulos.id_articulo.cast(db.String).ilike(txtsearch_format)
-    ).order_by(Articulos.rubro, Articulos.descripcion).all()
-    
-    # CORRECCIÓN DE INDENTACIÓN: Aseguramos que tengan exactamente 4 espacios desde el inicio
-    result = articulos_schema.dump(all_articulos)
-    return jsonify(result)
+@app.route('/store/<txtsearch>', methods=['GET'])
+@app.route('/store/<txtsearch>/<rubro>', methods=['GET'])
+def get_articulo(txtsearch, rubro=None):
+    try:
+        txtsearch_format = f'%{txtsearch}%'
+        consulta = Articulos.query
+        
+        # Filtro de rubro (si el usuario seleccionó uno específico)
+        if rubro and rubro != "todos":
+            consulta = consulta.filter(Articulos.rubro.ilike(rubro))
+            
+        # Filtro de texto libre manual
+        if txtsearch and txtsearch != "todos":
+            consulta = consulta.filter(
+                Articulos.descripcion.ilike(txtsearch_format) | 
+                Articulos.id_articulo.cast(db.String).ilike(txtsearch_format)
+            )
+            
+        all_articulos = consulta.order_by(Articulos.rubro, Articulos.descripcion).all()
+        result = articulos_schema.dump(all_articulos)
+        return jsonify(result)
+    except Exception as e:
+        print("Error en búsqueda avanzada:", str(e))
+        return jsonify([]), 500
 
 # Crea un pedido nuevo
 @app.route('/store', methods=['POST']) 
@@ -387,7 +398,18 @@ def ejecutar_sql_remoto():
     except Exception as e:
         print("Error en ejecución SQL masiva:", str(e))
         return jsonify({"status": "error", "mensaje": f"Error en la ejecución: {str(e)}"}), 500
-        
+
+# Endpoint automático para listar todos los rubros únicos en el listbox
+@app.route('/store/rubros', methods=['GET'])
+def get_rubros_unicos():
+    try:
+        rubros_query = db.session.query(Articulos.rubro).distinct().order_by(Articulos.rubro).all()
+        lista_rubros = [r[0] for r in rubros_query if r[0]]
+        return jsonify(lista_rubros)
+    except Exception as e:
+        print("Error al traer rubros:", str(e))
+        return jsonify([]), 500
+
 #Programa Principal
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
