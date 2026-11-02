@@ -405,7 +405,11 @@ def get_rubros_unicos():
     try:
         rubros_query = db.session.query(Articulos.rubro).distinct().order_by(Articulos.rubro).all()
         lista_rubros = [r[0] for r in rubros_query if r[0]]
-        return jsonify(lista_rubros)
+        
+        # Generamos la respuesta con permisos CORS explícitos para el listbox
+        respuesta = jsonify(lista_rubros)
+        respuesta.headers.add("Access-Control-Allow-Origin", "*")
+        return respuesta
     except Exception as e:
         print("Error al traer rubros:", str(e))
         return jsonify([]), 500
